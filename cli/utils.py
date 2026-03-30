@@ -8,6 +8,29 @@ from tradingagents.llm_clients.model_catalog import get_model_options
 
 console = Console()
 
+
+def try_load_databricks_llm_from_env() -> Optional[Tuple[str, str, str, str]]:
+    """If ``.env`` / the process environment has Databricks LLM settings, return them.
+
+    Returns ``(display_name, backend_url, quick_think_model, deep_think_model)`` so the
+    interactive CLI can skip provider and engine prompts. Otherwise ``None``.
+
+    Expects ``DATABRICKS_TOKEN``, ``DEEP_THINK_LLM``, ``QUICK_THINK_LLM``, and either
+    ``DATABRICKS_HOST`` (for endpoint names) or full serving URLs in the think vars.
+    """
+    try:
+        from tradingagents.databricks_connecting import build_tradingagents_config_from_env
+
+        cfg = build_tradingagents_config_from_env()
+        return (
+            "Databricks",
+            cfg["backend_url"],
+            cfg["quick_think_llm"],
+            cfg["deep_think_llm"],
+        )
+    except Exception:
+        return None
+
 TICKER_INPUT_EXAMPLES = "Examples: SPY, CNC.TO, 7203.T, 0700.HK"
 
 ANALYST_ORDER = [
@@ -136,7 +159,6 @@ def select_research_depth() -> int:
 
 def select_shallow_thinking_agent(provider) -> str:
     """Select shallow thinking llm engine using an interactive selection."""
-
     choice = questionary.select(
         "Select Your [Quick-Thinking LLM Engine]:",
         choices=[
@@ -164,7 +186,6 @@ def select_shallow_thinking_agent(provider) -> str:
 
 def select_deep_thinking_agent(provider) -> str:
     """Select deep thinking llm engine using an interactive selection."""
-
     choice = questionary.select(
         "Select Your [Deep-Thinking LLM Engine]:",
         choices=[
@@ -191,12 +212,12 @@ def select_llm_provider() -> tuple[str, str]:
     """Select the OpenAI api url using interactive selection."""
     # Define OpenAI api options with their corresponding endpoints
     BASE_URLS = [
+        ("Ollama", "http://localhost:11434/v1"),
         ("OpenAI", "https://api.openai.com/v1"),
         ("Google", "https://generativelanguage.googleapis.com/v1"),
         ("Anthropic", "https://api.anthropic.com/"),
         ("xAI", "https://api.x.ai/v1"),
         ("Openrouter", "https://openrouter.ai/api/v1"),
-        ("Ollama", "http://localhost:11434/v1"),
     ]
     
     choice = questionary.select(
@@ -281,37 +302,3 @@ def ask_gemini_thinking_config() -> str | None:
             ("pointer", "fg:green noinherit"),
         ]),
     ).ask()
-
-
-def ask_output_language() -> str:
-    """Ask for report output language."""
-    choice = questionary.select(
-        "Select Output Language:",
-        choices=[
-            questionary.Choice("English (default)", "English"),
-            questionary.Choice("Chinese (中文)", "Chinese"),
-            questionary.Choice("Japanese (日本語)", "Japanese"),
-            questionary.Choice("Korean (한국어)", "Korean"),
-            questionary.Choice("Hindi (हिन्दी)", "Hindi"),
-            questionary.Choice("Spanish (Español)", "Spanish"),
-            questionary.Choice("Portuguese (Português)", "Portuguese"),
-            questionary.Choice("French (Français)", "French"),
-            questionary.Choice("German (Deutsch)", "German"),
-            questionary.Choice("Arabic (العربية)", "Arabic"),
-            questionary.Choice("Russian (Русский)", "Russian"),
-            questionary.Choice("Custom language", "custom"),
-        ],
-        style=questionary.Style([
-            ("selected", "fg:yellow noinherit"),
-            ("highlighted", "fg:yellow noinherit"),
-            ("pointer", "fg:yellow noinherit"),
-        ]),
-    ).ask()
-
-    if choice == "custom":
-        return questionary.text(
-            "Enter language name (e.g. Turkish, Vietnamese, Thai, Indonesian):",
-            validate=lambda x: len(x.strip()) > 0 or "Please enter a language name.",
-        ).ask().strip()
-
-    return choice

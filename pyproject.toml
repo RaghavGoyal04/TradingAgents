@@ -37,6 +37,9 @@ tradingagents = "cli.main:app"
 
 [tool.setuptools.packages.find]
 include = ["tradingagents*", "cli*"]
+# Runtime CSV caches / local report trees — not importable packages (avoids broken
+# namespace merges in editable installs when site-packages gets a partial tree).
+exclude = ["tradingagents.dataflows.data_cache*", "tradingagents.results*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]

@@ -3,6 +3,8 @@ from typing import Any, Optional
 
 from langchain_openai import ChatOpenAI
 
+from tradingagents.env_utils import clean_env_value
+
 from .base_client import BaseLLMClient, normalize_content
 from .validators import validate_model
 
@@ -33,12 +35,12 @@ _PROVIDER_CONFIG = {
 
 
 class OpenAIClient(BaseLLMClient):
-    """Client for OpenAI, Ollama, OpenRouter, and xAI providers.
+    """Client for OpenAI, Ollama, OpenRouter, xAI, and Databricks serving providers.
 
     For native OpenAI models, uses the Responses API (/v1/responses) which
     supports reasoning_effort with function tools across all model families
     (GPT-4.1, GPT-5). Third-party compatible providers (xAI, OpenRouter,
-    Ollama) use standard Chat Completions.
+    Ollama, Databricks ``/serving-endpoints``) use standard Chat Completions.
     """
 
     def __init__(
@@ -56,8 +58,27 @@ class OpenAIClient(BaseLLMClient):
         self.warn_if_unknown_model()
         llm_kwargs = {"model": self.model}
 
+        # Databricks: OpenAI-compatible chat at {workspace}/serving-endpoints
+        if self.provider == "databricks":
+            if not self.base_url:
+                raise ValueError(
+                    "Databricks provider requires config['backend_url'] — use "
+                    "databricks_connecting.build_tradingagents_config_from_env() or "
+                    "build_tradingagents_config(...)."
+                )
+            llm_kwargs["base_url"] = self.base_url.rstrip("/")
+            token = self.kwargs.get("api_key") or clean_env_value(
+                os.environ.get("DATABRICKS_TOKEN")
+            )
+            if not token:
+                raise ValueError(
+                    "Databricks LLM requires a token: call "
+                    "databricks_connecting.configure_databricks_llm_environment() "
+                    "or set DATABRICKS_TOKEN in the environment / .env."
+                )
+            llm_kwargs["api_key"] = token
         # Provider-specific base URL and auth
-        if self.provider in _PROVIDER_CONFIG:
+        elif self.provider in _PROVIDER_CONFIG:
             base_url, api_key_env = _PROVIDER_CONFIG[self.provider]
             llm_kwargs["base_url"] = base_url
             if api_key_env:

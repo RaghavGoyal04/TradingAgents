@@ -519,19 +519,10 @@ def get_user_selections():
     )
     analysis_date = get_analysis_date()
 
-    # Step 3: Output language
+    # Step 3: Select analysts
     console.print(
         create_question_box(
-            "Step 3: Output Language",
-            "Select the language for analyst reports and final decision"
-        )
-    )
-    output_language = ask_output_language()
-
-    # Step 4: Select analysts
-    console.print(
-        create_question_box(
-            "Step 4: Analysts Team", "Select your LLM analyst agents for the analysis"
+            "Step 3: Analysts Team", "Select your LLM analyst agents for the analysis"
         )
     )
     selected_analysts = select_analysts()
@@ -539,32 +530,49 @@ def get_user_selections():
         f"[green]Selected analysts:[/green] {', '.join(analyst.value for analyst in selected_analysts)}"
     )
 
-    # Step 5: Research depth
+    # Step 4: Research depth
     console.print(
         create_question_box(
-            "Step 5: Research Depth", "Select your research depth level"
+            "Step 4: Research Depth", "Select your research depth level"
         )
     )
     selected_research_depth = select_research_depth()
 
-    # Step 6: LLM Provider
-    console.print(
-        create_question_box(
-            "Step 6: LLM Provider", "Select your LLM provider"
+    # Steps 5–6: LLM provider and models (skipped when Databricks is fully set in .env)
+    databricks_from_env = try_load_databricks_llm_from_env()
+    if databricks_from_env is not None:
+        selected_llm_provider, backend_url, selected_shallow_thinker, selected_deep_thinker = (
+            databricks_from_env
         )
-    )
-    selected_llm_provider, backend_url = select_llm_provider()
-
-    # Step 7: Thinking agents
-    console.print(
-        create_question_box(
-            "Step 7: Thinking Agents", "Select your thinking agents for analysis"
+        console.print(
+            Panel(
+                f"[bold]Step 5–6: LLM backend[/bold]\n"
+                f"[dim]Using Databricks from environment (.env):[/dim]\n"
+                f"  • Serving base: [cyan]{backend_url}[/cyan]\n"
+                f"  • Quick model: [green]{selected_shallow_thinker}[/green]\n"
+                f"  • Deep model: [green]{selected_deep_thinker}[/green]",
+                border_style="blue",
+                padding=(1, 2),
+                title="Databricks (no prompts)",
+            )
         )
-    )
-    selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
-    selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
+    else:
+        console.print(
+            create_question_box(
+                "Step 5: LLM Provider", "Select your LLM provider"
+            )
+        )
+        selected_llm_provider, backend_url = select_llm_provider()
 
-    # Step 8: Provider-specific thinking configuration
+        console.print(
+            create_question_box(
+                "Step 6: Thinking Agents", "Select your thinking agents for analysis"
+            )
+        )
+        selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
+        selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
+
+    # Step 7: Provider-specific thinking configuration
     thinking_level = None
     reasoning_effort = None
     anthropic_effort = None
@@ -573,7 +581,7 @@ def get_user_selections():
     if provider_lower == "google":
         console.print(
             create_question_box(
-                "Step 8: Thinking Mode",
+                "Step 7: Thinking Mode",
                 "Configure Gemini thinking mode"
             )
         )
@@ -581,7 +589,7 @@ def get_user_selections():
     elif provider_lower == "openai":
         console.print(
             create_question_box(
-                "Step 8: Reasoning Effort",
+                "Step 7: Reasoning Effort",
                 "Configure OpenAI reasoning effort level"
             )
         )
@@ -589,11 +597,15 @@ def get_user_selections():
     elif provider_lower == "anthropic":
         console.print(
             create_question_box(
-                "Step 8: Effort Level",
+                "Step 7: Effort Level",
                 "Configure Claude effort level"
             )
         )
         anthropic_effort = ask_anthropic_effort()
+    elif provider_lower == "ollama":
+        pass  # No extra thinking API options for local Ollama
+    elif provider_lower == "databricks":
+        pass  # Models and URL come from .env via try_load_databricks_llm_from_env
 
     return {
         "ticker": selected_ticker,
@@ -607,7 +619,6 @@ def get_user_selections():
         "google_thinking_level": thinking_level,
         "openai_reasoning_effort": reasoning_effort,
         "anthropic_effort": anthropic_effort,
-        "output_language": output_language,
     }
 
 
@@ -941,7 +952,6 @@ def run_analysis():
     config["google_thinking_level"] = selections.get("google_thinking_level")
     config["openai_reasoning_effort"] = selections.get("openai_reasoning_effort")
     config["anthropic_effort"] = selections.get("anthropic_effort")
-    config["output_language"] = selections.get("output_language", "English")
 
     # Create stats callback handler for tracking LLM/tool calls
     stats_handler = StatsCallbackHandler()
