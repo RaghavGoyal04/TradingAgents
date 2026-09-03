@@ -25,6 +25,23 @@ MAX_OHLCV_STALE_DAYS = 10
 # at all (weekend, holiday) cannot trigger a download on every call.
 OHLCV_CACHE_TTL_SECONDS = 900
 
+# Yahoo sometimes publishes a volume-only latest row for exchange-suffixed
+# listings while its adjusted close is still unavailable. These are the
+# non-US suffixes produced by the Trading212 mapper.
+_NON_US_YAHOO_SUFFIXES = (
+    ".AS",
+    ".BR",
+    ".DE",
+    ".L",
+    ".LS",
+    ".MC",
+    ".MI",
+    ".PA",
+    ".SW",
+    ".TO",
+    ".VI",
+)
+
 
 def yf_retry(func, max_retries=3, base_delay=2.0):
     """Execute a yfinance call with exponential backoff on rate limits.
@@ -251,13 +268,29 @@ def load_ohlcv(symbol: str, curr_date: str) -> pd.DataFrame:
     data = data[data["Date"] <= curr_date_dt]
 
     # Guard the latest in-range bar before dropping incomplete rows: a newest bar
-    # with no close is "not settled yet", not "does not exist". Silently dropping
-    # it would make the previous trading day look like the latest (#1201); raise
-    # instead so the router surfaces it rather than fabricating a fallback.
+    # with no close is "not settled yet", not "does not exist". For US symbols,
+    # keep raising so an incomplete session never masquerades as today's close
+    # (#1201). Yahoo commonly emits this placeholder for exchange-suffixed
+    # European listings after their session, though; keep those tickers usable
+    # by falling back to the newest complete bar. The staleness guard below
+    # still rejects that fallback when it is more than 10 calendar days old.
     if not data.empty and pd.isna(data["Close"].iloc[-1]):
-        raise NoMarketDataError(
-            symbol, canonical, "latest in-range OHLCV bar has no closing price"
-        )
+        previous = data.iloc[:-1].dropna(subset=["Close"])
+        if canonical.endswith(_NON_US_YAHOO_SUFFIXES) and not previous.empty:
+            incomplete_date = data["Date"].iloc[-1].date()
+            fallback_date = previous["Date"].iloc[-1].date()
+            logger.warning(
+                "%s: Yahoo's %s bar has no close; using the latest complete "
+                "bar from %s",
+                canonical,
+                incomplete_date,
+                fallback_date,
+            )
+            data = data.iloc[:-1].copy()
+        else:
+            raise NoMarketDataError(
+                symbol, canonical, "latest in-range OHLCV bar has no closing price"
+            )
 
     data = _fill_price_gaps(data)
 

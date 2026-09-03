@@ -80,20 +80,22 @@ def test_fill_price_gaps_drops_nan_close_rows():
 
 # --- load_ohlcv end-to-end (with a mocked cache read) -----------------------
 
-def _run_load(monkeypatch, tmp_path, frame, curr_date):
+def _run_load(monkeypatch, tmp_path, frame, curr_date, symbol="AAPL"):
     """Drive load_ohlcv against a pre-seeded cache frame (no network)."""
     monkeypatch.setattr(su, "get_config", lambda: {"data_cache_dir": str(tmp_path)})
     today = pd.Timestamp(curr_date)
     monkeypatch.setattr(su.pd.Timestamp, "today", staticmethod(lambda: today))
     start = (today - pd.DateOffset(years=5)).strftime("%Y-%m-%d")
     end = (today + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
-    (tmp_path / f"AAPL-YFin-data-{start}-{end}.csv").write_text(frame.to_csv(index=False))
+    (tmp_path / f"{symbol}-YFin-data-{start}-{end}.csv").write_text(
+        frame.to_csv(index=False)
+    )
 
     def _fail_download(*a, **k):
         raise AssertionError("should use the seeded cache, not download")
     monkeypatch.setattr(su.yf, "download", _fail_download)
     monkeypatch.setattr(su, "_assert_ohlcv_not_stale", lambda *a, **k: None)
-    return su.load_ohlcv("AAPL", curr_date)
+    return su.load_ohlcv(symbol, curr_date)
 
 
 @pytest.mark.unit
@@ -106,6 +108,28 @@ def test_latest_in_range_nan_close_raises_not_silent_fallback(monkeypatch, tmp_p
     })
     with pytest.raises(NoMarketDataError, match="no closing price"):
         _run_load(monkeypatch, tmp_path, frame, "2026-05-08")
+
+
+@pytest.mark.unit
+def test_foreign_listing_uses_recent_complete_bar_when_yahoo_close_is_nan(
+    monkeypatch, tmp_path, caplog
+):
+    # Yahoo intermittently publishes a volume-only current row for LSE and
+    # European listings. That should not prevent analysis of the whole ticker.
+    frame = pd.DataFrame({
+        "Date": ["2026-05-07", "2026-05-08"],
+        "Open": [100.0, float("nan")],
+        "High": [101.0, float("nan")],
+        "Low": [99.0, float("nan")],
+        "Close": [100.5, float("nan")],
+        "Volume": [1_000_000, 1_100_000],
+    })
+
+    out = _run_load(monkeypatch, tmp_path, frame, "2026-05-08", "RR.L")
+
+    assert list(out["Date"]) == [pd.Timestamp("2026-05-07")]
+    assert out["Close"].iloc[-1] == 100.5
+    assert "using the latest complete bar from 2026-05-07" in caplog.text
 
 
 @pytest.mark.unit

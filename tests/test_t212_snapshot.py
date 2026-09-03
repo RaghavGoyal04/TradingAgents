@@ -49,6 +49,7 @@ def creds(monkeypatch):
         ("RRl_EQ", "RR.L"),
         ("SIEd_EQ", "SIE.DE"),
         ("SUp_EQ", "SU.PA"),
+        ("IPXX_US_EQ", "USAR"),
     ],
 )
 def test_symbol_mapping(broker, yahoo):

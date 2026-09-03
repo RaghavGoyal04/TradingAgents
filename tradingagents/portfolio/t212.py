@@ -55,6 +55,9 @@ _PIE_BACKOFF_SECONDS = 6
 # ``_EQ``). Checked before the suffix rules. Extend with verified mappings only.
 _T212_TICKER_ALIASES = {
     "CNX1_EQ": "CNX1.L",  # iShares NASDAQ 100 UCITS ETF (LSE, quoted in GBp)
+    # USA Rare Earth began trading as USAR after the Inflection Point
+    # Acquisition Corp. II merger; Trading212 still exposes the legacy ticker.
+    "IPXX_US_EQ": "USAR",
 }
 
 # Trading212 broker ticker suffix -> Yahoo Finance suffix. Order matters: the
