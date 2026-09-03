@@ -221,3 +221,10 @@ __marimo__/
 # Enterprise env file (secrets) and generated run reports
 .env.enterprise
 reports/
+
+# Portfolio dashboard artifacts (contain account values / holdings) and run dirs
+trading212_holdings_*.json
+portfolio_snapshot.json
+run_manifest.json
+forecasts.json
+events.jsonl

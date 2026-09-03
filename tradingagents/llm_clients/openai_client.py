@@ -176,8 +176,15 @@ _OPENAI_REASONING_MODEL = re.compile(r"^(gpt-5|o[1-9])")
 
 
 def _supports_reasoning_effort(model: str) -> bool:
-    """Whether the (native OpenAI) model accepts ``reasoning_effort``."""
-    return bool(_OPENAI_REASONING_MODEL.match(model.lower().strip()))
+    """Whether the model accepts ``reasoning_effort``.
+
+    Gateways that re-host OpenAI models prefix the upstream name, so the bare
+    regex would drop the kwarg for a model that does support it — Databricks
+    serves GPT-5.6 Sol as ``databricks-gpt-5-6-sol``. Strip the known prefix
+    before matching rather than silently degrading the caller's request.
+    """
+    name = model.lower().strip().removeprefix("databricks-")
+    return bool(_OPENAI_REASONING_MODEL.match(name))
 
 
 @dataclass(frozen=True)

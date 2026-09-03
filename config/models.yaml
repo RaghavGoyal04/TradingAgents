@@ -1,0 +1,77 @@
+# Model catalog for the portfolio dashboard.
+#
+# Edit this file to add, remove or reorder models — the dashboard reads it at
+# startup and no code change is needed. Model IDs must match the provider
+# exactly: a Bedrock inference-profile ID, or a Databricks serving-endpoint name.
+#
+#   databricks serving-endpoints list          # valid Databricks ids
+#   aws bedrock list-inference-profiles        # valid Bedrock ids
+#
+# default_quick / default_deep: which model each dropdown starts on. Quick runs
+#   the high-volume calls, deep does the reasoning that decides a trade.
+#
+# efforts: the reasoning-effort values the model accepts, cheapest first. Leave
+#   the list out when a model has no effort dial — the dashboard then hides the
+#   control instead of sending a parameter the API would reject.
+#
+#   Bedrock entries carry no efforts on purpose: the Converse client in
+#   tradingagents/llm_clients/bedrock_client.py has no effort passthrough, so an
+#   effort chosen here would be silently dropped. Databricks serves the same
+#   Anthropic models over the OpenAI-compatible API, which does accept it.
+
+bedrock:
+  label: AWS Bedrock
+  auth: aws-profile
+  llm_provider: bedrock
+  profile: wbd-boltcloud-data-processing-dev.GtDcpDca
+  default_quick: us.anthropic.claude-sonnet-4-6
+  default_deep: us.anthropic.claude-opus-4-7
+  models:
+    - id: us.anthropic.claude-sonnet-4-6
+      label: Claude Sonnet 4.6
+    - id: us.anthropic.claude-sonnet-5
+      label: Claude Sonnet 5
+    - id: us.anthropic.claude-haiku-4-5-20251001-v1:0
+      label: Claude Haiku 4.5
+    - id: us.anthropic.claude-opus-4-7
+      label: Claude Opus 4.7
+    - id: us.anthropic.claude-opus-4-8
+      label: Claude Opus 4.8
+    - id: us.anthropic.claude-opus-5
+      label: Claude Opus 5
+
+databricks:
+  label: Databricks Model Serving
+  auth: databricks-profile
+  llm_provider: openai_compatible
+  profile: DEFAULT
+  default_quick: databricks-claude-sonnet-4-6
+  default_deep: databricks-gpt-5-6-sol
+  models:
+    # Effort lists below were probed against the live endpoints: every GPT-5
+    # model here takes xhigh, and none of them accept "minimal".
+    # databricks-gpt-5-5-pro is deliberately absent — it serves only the
+    # Responses API and 400s on the chat-completions path this client uses.
+    - id: databricks-gpt-5-6-sol
+      label: GPT-5.6 Sol
+      efforts: [low, medium, high, xhigh]
+    - id: databricks-gpt-5-5
+      label: GPT-5.5
+      efforts: [low, medium, high, xhigh]
+    - id: databricks-gpt-5-4-mini
+      label: GPT-5.4 Mini
+      efforts: [low, medium, high, xhigh]
+    - id: databricks-claude-sonnet-4-6
+      label: Claude Sonnet 4.6
+    - id: databricks-claude-sonnet-5
+      label: Claude Sonnet 5
+    - id: databricks-claude-haiku-4-5
+      label: Claude Haiku 4.5
+    - id: databricks-claude-opus-4-8
+      label: Claude Opus 4.8
+    - id: databricks-claude-opus-5
+      label: Claude Opus 5
+    - id: databricks-gemini-3-8-flash
+      label: Gemini 3.8 Flash
+    - id: databricks-grok-4-6
+      label: Grok 4.6

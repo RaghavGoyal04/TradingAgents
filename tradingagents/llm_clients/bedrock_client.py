@@ -6,6 +6,7 @@ from .validators import validate_model
 
 # Bedrock has no global default region; us-west-2 hosts the broadest model set.
 _DEFAULT_REGION = "us-west-2"
+_DEFAULT_TIMEOUT = 600
 _BEDROCK_CLASS = None
 
 
@@ -59,7 +60,11 @@ class BedrockClient(BaseLLMClient):
             or os.environ.get("AWS_DEFAULT_REGION")
             or _DEFAULT_REGION
         )
-        llm_kwargs = {"model": self.model, "region_name": region}
+        llm_kwargs = {
+            "model": self.model,
+            "region_name": region,
+            "timeout": _DEFAULT_TIMEOUT,
+        }
         # A Bedrock API key authenticates without AWS access keys. Passing it as
         # api_key makes langchain-aws prefer bearer auth, so an ambient
         # AWS_PROFILE / SigV4 credentials can't override it (#1103).

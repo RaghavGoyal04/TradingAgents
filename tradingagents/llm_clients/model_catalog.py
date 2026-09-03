@@ -188,6 +188,12 @@ MODEL_OPTIONS: ProviderModeOptions = {
     "nvidia": _CUSTOM_ONLY,
     # Bedrock model IDs / cross-region inference profile IDs are user-specified.
     "bedrock": _CUSTOM_ONLY,
+    # Copilot's hosted model catalog changes with the user's subscription and
+    # organization policy. Let the service choose, or accept a custom model ID.
+    "copilot": {
+        "quick": [("Automatic model selection", "auto"), ("Custom model ID", "custom")],
+        "deep": [("Automatic model selection", "auto"), ("Custom model ID", "custom")],
+    },
 }
 
 

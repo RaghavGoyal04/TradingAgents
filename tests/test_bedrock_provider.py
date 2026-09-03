@@ -67,6 +67,7 @@ def test_no_bearer_token_omits_api_key(monkeypatch):
     monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     create_llm_client("bedrock", "us.anthropic.claude-opus-4-8-v1:0").get_llm()
     assert "api_key" not in captured
+    assert captured["timeout"] == 600
 
 
 @pytest.mark.unit

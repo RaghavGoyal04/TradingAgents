@@ -145,12 +145,15 @@ export ZHIPU_CN_API_KEY=...        # GLM via BigModel (China, open.bigmodel.cn)
 export MINIMAX_API_KEY=...         # MiniMax — Global (api.minimax.io)
 export MINIMAX_CN_API_KEY=...      # MiniMax — China (api.minimaxi.com)
 export OPENROUTER_API_KEY=...      # OpenRouter
+export COPILOT_GITHUB_TOKEN=...    # GitHub Copilot (fine-grained PAT)
 export ALPHA_VANTAGE_API_KEY=...   # Alpha Vantage
 ```
 
 For Azure OpenAI, copy `.env.enterprise.example` to `.env.enterprise` and fill in your credentials.
 
 For AWS Bedrock, install the extra with `pip install ".[bedrock]"`, set `llm_provider: "bedrock"`, configure AWS credentials (environment variables, `~/.aws/credentials`, or an IAM role) and `AWS_DEFAULT_REGION`, and use a Bedrock model ID, e.g. `us.anthropic.claude-opus-4-8-v1:0`.
+
+For GitHub Copilot, use Python 3.11+, install the SDK and runtime with `pip install ".[copilot]" && python -m copilot download-runtime`, then set `COPILOT_GITHUB_TOKEN` to a personal-account fine-grained PAT with the **Copilot Requests** account permission. Select `copilot` in the CLI, or set `TRADINGAGENTS_LLM_PROVIDER=copilot` and use `auto` for both model settings. The GitHub account must have Copilot access.
 
 For local models, configure Ollama with `llm_provider: "ollama"`. The default endpoint is `http://localhost:11434/v1`; set `OLLAMA_BASE_URL` to point at a remote `ollama-serve`. Pull models with `ollama pull <name>`, and pick "Custom model ID" in the CLI for any model not listed by default.
 
@@ -198,7 +201,7 @@ An interface will appear showing results as they load, letting you track the age
 
 ### Implementation Details
 
-We built TradingAgents with LangGraph to ensure flexibility and modularity. The framework supports multiple LLM providers: OpenAI, Google, Anthropic, xAI, DeepSeek, Qwen (Alibaba DashScope, international and China endpoints), GLM (Zhipu), MiniMax (global + China), OpenRouter, Ollama for local models, and Azure OpenAI for enterprise.
+We built TradingAgents with LangGraph to ensure flexibility and modularity. The framework supports multiple LLM providers: OpenAI, Google, Anthropic, xAI, DeepSeek, Qwen (Alibaba DashScope, international and China endpoints), GLM (Zhipu), MiniMax (global + China), OpenRouter, GitHub Copilot, Ollama for local models, and Azure OpenAI for enterprise.
 
 ### Python Usage
 

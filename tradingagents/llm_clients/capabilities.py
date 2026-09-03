@@ -82,6 +82,21 @@ _MINIMAX_THINKING = ModelCapabilities(
     requires_reasoning_split=True,
 )
 
+# Databricks Model Serving re-hosts OpenAI, Anthropic and Google models behind
+# one OpenAI-compatible API whose chat-completions path rejects the
+# function-calling shape langchain emits. GPT-5.x answers "Function tools with
+# reasoning_effort are not supported ... use /v1/responses" (its endpoints apply
+# a default effort, so this happens even when the caller sets none), and the
+# Anthropic endpoints reject the ``parallel_tool_calls`` field langchain adds.
+# Both accept json_schema, so prefer it and keep the agents on structured
+# output instead of silently degrading to free text.
+_DATABRICKS = ModelCapabilities(
+    supports_tool_choice=False,
+    supports_json_mode=False,
+    supports_json_schema=True,
+    preferred_structured_method="json_schema",
+)
+
 _DEFAULT = ModelCapabilities(
     supports_tool_choice=True,
     supports_json_mode=True,
@@ -110,6 +125,7 @@ _BY_ID: dict[str, ModelCapabilities] = {
 # Forward-compat patterns. New ``deepseek-v5-*`` / ``deepseek-reasoner-*``
 # or ``MiniMax-M3*`` variants inherit the thinking-mode quirks automatically.
 _BY_PATTERN: list[tuple[re.Pattern[str], ModelCapabilities]] = [
+    (re.compile(r"^databricks-"), _DATABRICKS),
     (re.compile(r"^deepseek-v\d"), _DEEPSEEK_THINKING),
     (re.compile(r"^deepseek-reasoner"), _DEEPSEEK_THINKING),
     (re.compile(r"^MiniMax-M\d"), _MINIMAX_THINKING),

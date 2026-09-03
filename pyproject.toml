@@ -17,8 +17,10 @@ dependencies = [
     "langchain-openai>=0.3.23",
     "langgraph>=0.4.8",
     "langgraph-checkpoint-sqlite>=2.0.0",
+    "numpy>=1.26.0",
     "pandas>=2.3.0",
     "parsel>=1.10.0",
+    "pypdf>=5.1.0",
     "python-dotenv>=1.0.0",
     "pytz>=2025.2",
     "questionary>=2.1.0",
@@ -43,6 +45,20 @@ dev = [
 # stays lean: pip install "tradingagents[bedrock]".
 bedrock = [
     "langchain-aws>=1.5.0",
+]
+copilot = [
+    "github-copilot-sdk>=1.0.11 ; python_full_version >= '3.11'",
+]
+# Local portfolio intelligence dashboard (Streamlit UI + charts). Optional so
+# the core install stays lean: pip install "tradingagents[dashboard]".
+dashboard = [
+    "streamlit>=1.40",
+]
+# TimesFM forecasting candidate (heavy: torch + ~1GB weights on first use).
+# Optional and lazy-loaded; the dashboard falls back to bootstrap baselines when
+# absent: pip install "tradingagents[forecast]".
+forecast = [
+    "timesfm[torch]>=2.0.0",
 ]
 
 [project.scripts]
